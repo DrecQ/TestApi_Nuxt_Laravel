@@ -32,6 +32,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'identifiant',
     ];
 
+        protected $attributes = [
+        'role' => 'user', // Définit 'user' comme rôle par défaut
+    ];
+
     /**
      * The attributes that should be hidden for serialization.
      *

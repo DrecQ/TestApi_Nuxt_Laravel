@@ -35,7 +35,6 @@ class ApiController extends Controller
                 "lastname" => $request->lastname,
                 "firstname" => $request->firstname,
                 "email" => $request->email,
-                "role" => $request->role,
                 "password" => Hash::make($request->password),
                 "identifiant" => "USER-" . strtoupper(Str::random(8))
             ]);

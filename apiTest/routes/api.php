@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\Sanctum;
 
-Route::post("register", [ApiController::class, "register"]);
+Route::post("/register", [ApiController::class, "register"]);
 Route::post('/login', [ApiController::class, 'login'])->name('login');
 Route::post('email/verify/{id}/{hash}', [ApiController::class, 'emailVerify'])->name('verification.verify');
 Route::post('/resend-email-verify', [ApiController::class, 'resendEmailVerificationMail'])->middleware('auth:sanctum');
