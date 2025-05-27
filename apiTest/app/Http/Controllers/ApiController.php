@@ -19,7 +19,7 @@ class ApiController extends Controller
             "lastname" => "required|string|max:200",
             "firstname"  => "required|string|max:200",
             "email" => "required|string|email|unique:users",
-            "role" => "required|string|max:20",
+            "role" => "string|max:20",
             "password" => "required|string|confirmed"
         ]);
 
@@ -52,41 +52,55 @@ class ApiController extends Controller
 
     public function login(Request $request)
     {
-        // Valider les champs
+        
         $validator = Validator::make($request->all(), [
             'email' => 'required|string|email',
             'password' => 'required|string',
         ]);
 
         if ($validator->fails()) {
-
-            $errorMessage =  $validator->errors()->first();
+            
             return response()->json([
                 'status' => false,
-                'errors' => $errorMessage,
-            ], 422);
+                'errors' => $validator->errors()->first(), 
+            ], 422); 
         }
 
-        // Rechercher l'utilisateur
+        
         $user = User::where('email', $request->email)->first();
 
+        
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => false,
-                'message' => 'L’e-mail ou le mot de passe est incorrect.'
-            ], 401);
+                'message' => 'L’e-mail ou le mot de passe est incorrect.',
+            ], 401); 
         }
 
-        // Générer un token d'accès (Sanctum)
+        
+        if (! $user->hasVerifiedEmail()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Votre email n\'est pas vérifié. Veuillez vérifier votre boîte de réception.',
+            ], 403); 
+        }
+
+        
         $token = $user->createToken('api_token')->plainTextToken;
 
+        
         return response()->json([
             'status' => true,
-            'message' => 'Connexion réussie ',
+            'message' => 'Connexion réussie.',
             'token' => $token,
-            'user' => $user
-        ]);
-
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                
+            ],
+        ], 200); 
     }
 
      // Profile (GET, Auth, Token)
@@ -134,34 +148,29 @@ class ApiController extends Controller
     }
 
 
-   public function emailVerify($user_id, Request $request)
+        public function emailVerify($user_id, Request $request)
         {
             if (! $request->hasValidSignature()) {
-                return response()->json([
-                    'message' => 'Lien de vérification invalide ou expiré.',
-                ], 400);
+               
+                return redirect()->to(env('FRONTEND_URL', 'http://localhost:3000') . '/auth/email-verification-error?message=invalid_link');
             }
 
             $user = User::find($user_id);
 
             if (!$user) {
-                return response()->json([
-                    'message' => 'Utilisateur non trouvé.',
-                ], 404);
+                
+                return redirect()->to(env('FRONTEND_URL', 'http://localhost:3000') . '/auth/email-verification-error?message=user_not_found');
             }
 
             if ($user->hasVerifiedEmail()) {
-                return response()->json([
-                    'message' => 'Adresse email déjà vérifiée.',
-                ]);
+                // Rediriger vers une page frontend indiquant que l'email est déjà vérifié
+                return redirect()->to(env('FRONTEND_URL', 'http://localhost:3000') . '/auth/email-verified-success?message=already_verified');
             }
 
             $user->markEmailAsVerified();
 
-            return response()->json([
-                'message' => 'Adresse email vérifiée avec succès.',
-                'user' => $user,
-            ]);
+            // Rediriger vers une page frontend de succès après la vérification
+            return redirect()->to(env('FRONTEND_URL', 'http://localhost:3000') . '/auth/email-verified-success?message=success');
         }
 
         public function resendEmailVerificationMail(Request $request)
