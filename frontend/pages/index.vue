@@ -1,54 +1,75 @@
 <script lang="ts" setup>
+import { ref } from 'vue' 
+import { useRouter } from 'vue-router' 
+
 const email = ref('')
 const password = ref('')
 const router = useRouter()
 
-
 const loading = ref(false)
-const serverErrors = ref<string[]>([]) 
+const serverErrors = ref<string[]>([])
+const showEmailVerificationMessage = ref(false)
 
 const handleLogin = async () => {
-  
   serverErrors.value = []
-  loading.value = true 
+  showEmailVerificationMessage.value = false 
+  loading.value = true
 
   try {
-  
+   
     await $fetch('http://localhost:8000/sanctum/csrf-cookie', {
       credentials: 'include'
     })
 
   
-    await $fetch('http://localhost:8000/api/login', {
+    const response: any = await $fetch('http://localhost:8000/api/login', {
       method: 'POST',
       body: { email: email.value, password: password.value },
       credentials: 'include'
     })
 
-   
-    router.push('/dashboard')
-  } catch (error: any) { 
-    console.error('Login error', error)
+    
+    if (response && response.status === true && response.user && response.user.role) {
+      const userRole = response.user.role; 
 
-
-    if (error.response && error.response._data && error.response._data.errors) {
-      
-      for (const key in error.response._data.errors) {
-        if (Object.prototype.hasOwnProperty.call(error.response._data.errors, key)) {
-          error.response._data.errors[key].forEach((msg: string) => {
-            serverErrors.value.push(msg)
-          })
-        }
+      // Redirection basée sur le rôle
+      if (userRole === 'admin') {
+        router.push('/dashboard/dashboardAdmin'); 
+      } else if (userRole === 'user') {
+        router.push('/dashboard/dashboardUser');
+      } else {
+        // Gérer les rôles inconnus ou par défaut
+        router.push('/');
       }
-    } else if (error.response && error.response._data && error.response._data.message) {
-     
-      serverErrors.value.push(error.response._data.message)
     } else {
+      
+      serverErrors.value.push('Une erreur inattendue est survenue lors de la connexion.');
+    }
+
+  } catch (error: any) {
+    console.error('Erreur de connexion:', error);
+
+    if (error.response && error.response._data) {
+      
+      if (error.response.status === 403 && error.response._data.message === 'Votre email n\'est pas vérifié. Veuillez vérifier votre boîte de réception.') {
+        showEmailVerificationMessage.value = true;
+        router.push('/auth/email-verification-error');
+      }
      
-      serverErrors.value.push('Une erreur inattendue est survenue. Veuillez réessayer.')
+      else if (error.response.status === 422 && error.response._data.errors) {
+        
+        serverErrors.value.push(error.response._data.errors);
+      }
+   
+      else if (error.response._data.message) {
+        serverErrors.value.push(error.response._data.message);
+      }
+    } else {
+      
+      serverErrors.value.push('Une erreur inattendue est survenue. Veuillez réessayer.');
     }
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 </script>
@@ -60,6 +81,12 @@ const handleLogin = async () => {
       class="w-full max-w-md space-y-6 bg-slate-800 p-8 rounded-xl"
     >
       <h1 class="text-2xl font-bold text-center text-white">Connexion</h1>
+
+      <div v-if="showEmailVerificationMessage" class="bg-yellow-500 bg-opacity-20 border border-yellow-400 text-yellow-300 px-4 py-3 rounded-md mb-4">
+        <p class="text-sm">
+          Votre compte n'est pas encore vérifié. Veuillez valider votre inscription en cliquant sur le lien envoyé à votre adresse email.
+        </p>
+      </div>
 
       <div v-if="serverErrors.length" class="bg-red-500 bg-opacity-20 border border-red-400 text-red-300 px-4 py-3 rounded-md mb-4">
         <p v-for="(error, index) in serverErrors" :key="index" class="text-sm">

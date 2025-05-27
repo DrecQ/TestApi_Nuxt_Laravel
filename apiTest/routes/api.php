@@ -9,7 +9,11 @@ use Laravel\Sanctum\Sanctum;
 
 Route::post("/register", [ApiController::class, "register"]);
 Route::post('/login', [ApiController::class, 'login'])->name('login');
-Route::post('email/verify/{id}/{hash}', [ApiController::class, 'emailVerify'])->name('verification.verify');
+
+Route::get('email/verify/{id}/{hash}', [ApiController::class, 'emailVerify'])
+    ->name('verification.verify')
+    ->middleware('signed'); 
+
 Route::post('/resend-email-verify', [ApiController::class, 'resendEmailVerificationMail'])->middleware('auth:sanctum');
 Route::post('/forgot-password', [ApiController::class, 'forgotPassword']);
 Route::post('/reset-password', [ApiController::class, 'resetPassword'])->name('password.reset');
@@ -25,15 +29,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/profile', [ApiController::class, 'profile']);
-    Route::post('/logout', [ApiController::class, 'logout']); 
+    Route::post('/logout', [ApiController::class, 'logout']);
     Route::get('/refresh-token', [ApiController::class, 'refreshToken']);
 });
 
 
 Route::prefix('admin')->group(function () {
-    Route::get('/users', [AdminController::class, 'index']);       
-    Route::post('/users', [AdminController::class, 'store']);      
-    Route::get('/users/{id}', [AdminController::class, 'show']);   
-    Route::put('/users/{id}', [AdminController::class, 'update']); 
-    Route::delete('/users/{id}', [AdminController::class, 'destroy']); 
+    Route::get('/users', [AdminController::class, 'index']);
+    Route::post('/users', [AdminController::class, 'store']);
+    Route::get('/users/{id}', [AdminController::class, 'show']);
+    Route::put('/users/{id}', [AdminController::class, 'update']);
+    Route::delete('/users/{id}', [AdminController::class, 'destroy']);
 });
