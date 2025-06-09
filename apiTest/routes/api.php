@@ -1,43 +1,37 @@
 <?php
 
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\ApiController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ResetPasswordController;
+use App\Http\Controllers\EmailVerifyController;
+use App\Http\Controllers\LoginController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Laravel\Sanctum\Sanctum;
 
-Route::post("/register", [ApiController::class, "register"]);
-Route::post('/login', [ApiController::class, 'login'])->name('login');
+Route::group(['prefix' => 'v1'], function () {
+    Route::post('/forgot-password', [ResetPasswordController::class, 'forgotPassword'])->middleware('signed'); 
+    Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword'])->middleware('signed'); 
 
-Route::get('email/verify/{id}/{hash}', [ApiController::class, 'emailVerify'])
-    ->name('verification.verify')
-    ->middleware('signed'); 
+    Route::get('email/verify/{id}/{hash}', [EmailVerifyController::class, 'emailVerify'])
+        ->name('verification.verify')
+        ->middleware('signed'); 
 
-Route::post('/resend-email-verify', [ApiController::class, 'resendEmailVerificationMail'])->middleware('auth:sanctum');
-Route::post('/forgot-password', [ApiController::class, 'forgotPassword']);
-Route::post('/reset-password', [ApiController::class, 'resetPassword'])->name('password.reset');
-
-
-// Routes protégées avec middleware auth:sanctum
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/user', function (Request $request) {
-        return $request->user();
+    Route::prefix('users')->group(function () {
+        Route::get('/', [UserController::class, 'index']);
+        Route::post('/', [UserController::class, 'store']);
+        Route::get('/{user}', [UserController::class, 'show']);
+        Route::put('/{user}', [UserController::class, 'update']);
+        Route::delete('/{user}', [UserController::class, 'destroy']);
+        Route::post('/{user}/resend-email-verify', [UserController::class, 'resendEmailVerificationMail'])
+            ->middleware('auth:sanctum');
+        
+        // Routes d'export
+        Route::get('/export/excel', [UserController::class, 'exportExcel'])
+            ->middleware('auth:sanctum');
+        Route::get('/export/pdf', [UserController::class, 'exportPdf'])
+            ->middleware('auth:sanctum');
     });
 
-    Route::get('/users', [ApiController::class, 'index']);
-
-    Route::get('/users', [UserController::class, 'index']);
-    Route::get('/profile', [ApiController::class, 'profile']);
-    Route::post('/logout', [ApiController::class, 'logout']);
-    Route::get('/refresh-token', [ApiController::class, 'refreshToken']);
-});
-
-
-Route::prefix('admin')->group(function () {
-    Route::get('/users', [AdminController::class, 'index']);
-    Route::post('/users', [AdminController::class, 'store']);
-    Route::get('/users/{id}', [AdminController::class, 'show']);
-    Route::put('/users/{id}', [AdminController::class, 'update']);
-    Route::delete('/users/{id}', [AdminController::class, 'destroy']);
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me', [LoginController::class, 'getAuthUser']);
+    });
 });

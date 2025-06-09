@@ -23,6 +23,7 @@ class UserStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'identifiant' => ['required', 'string', 'max:255', 'unique:users'],
             'lastname' => ['required', 'string', 'max:200', 'min:2'],
             'firstname' => ['required', 'string', 'max:200', 'min:2'],
             'email' => ['required', 'string', 'email', 'unique:users', 'max:255'],
@@ -39,6 +40,8 @@ class UserStoreRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'identifiant.required' => 'L\'identifiant est obligatoire',
+            'identifiant.unique' => 'Cet identifiant est déjà utilisé',
             'lastname.required' => 'Le nom est obligatoire',
             'lastname.min' => 'Le nom doit contenir au moins 2 caractères',
             'firstname.required' => 'Le prénom est obligatoire',
