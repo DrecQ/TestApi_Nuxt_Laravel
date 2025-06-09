@@ -17,6 +17,7 @@ class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens,HasFactory, Notifiable, CanResetPassword;
+        use \Illuminate\Auth\MustVerifyEmail; 
 
     /**
      * The attributes that are mass assignable.
